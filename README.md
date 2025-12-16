@@ -20,8 +20,8 @@ An iOS chore tracking app with advanced recurrence patterns, multi-user househol
 
 ## Requirements
 
-- iOS 16.0+
-- Xcode 15.0+
+- iOS 18.0+
+- Xcode 16.0+ (or latest version supporting iOS 18)
 - Active Apple Developer account (for CloudKit)
 
 ## Project Status

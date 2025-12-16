@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="24512" systemVersion="25C56" minimumToolsVersion="Automatic" sourceLanguage="Swift" usedWithSwiftData="YES" userDefinedModelVersionIdentifier="">
+    <entity name="ChoreInstance" representedClassName="ChoreInstance" syncable="YES" codeGenerationType="class">
+        <attribute name="actualDuration" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="completedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="dueDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="notes" optional="YES" attributeType="String"/>
+        <attribute name="rejectionReason" optional="YES" attributeType="String"/>
+        <attribute name="requiresReview" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="reviewedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="reviewStatus" optional="YES" attributeType="String"/>
+        <attribute name="status" optional="YES" attributeType="String"/>
+        <relationship name="completedBy" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="User" inverseName="completedInstances" inverseEntity="User"/>
+        <relationship name="template" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="ChoreTemplate" inverseName="instances" inverseEntity="ChoreTemplate"/>
+    </entity>
+    <entity name="ChoreTemplate" representedClassName="ChoreTemplate" syncable="YES" codeGenerationType="class">
+        <attribute name="category" optional="YES" attributeType="String"/>
+        <attribute name="choreDescription" optional="YES" attributeType="String"/>
+        <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="estimatedDuration" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="isActive" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="name" optional="YES" attributeType="String"/>
+        <attribute name="recurrenceRuleJSON" optional="YES" attributeType="String"/>
+        <relationship name="createdBy" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="User" inverseName="createdTemplates" inverseEntity="User"/>
+        <relationship name="instances" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="ChoreInstance" inverseName="template" inverseEntity="ChoreInstance"/>
+    </entity>
+    <entity name="User" representedClassName="User" syncable="YES" codeGenerationType="class">
+        <attribute name="currentGoalStreak" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="email" optional="YES" attributeType="String"/>
+        <attribute name="hasDevice" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="isMinor" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="lastGoalCompletionDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="longestGoalStreak" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="name" optional="YES" attributeType="String"/>
+        <attribute name="parentConsentDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="parentId" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="userType" optional="YES" attributeType="String"/>
+        <relationship name="completedInstances" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="ChoreInstance" inverseName="completedBy" inverseEntity="ChoreInstance"/>
+        <relationship name="createdTemplates" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="ChoreTemplate" inverseName="createdBy" inverseEntity="ChoreTemplate"/>
+    </entity>
+</model>
