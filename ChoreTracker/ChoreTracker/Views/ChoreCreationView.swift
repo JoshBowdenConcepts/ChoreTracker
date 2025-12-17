@@ -16,6 +16,8 @@ struct ChoreCreationView: View {
     @State private var category = "General"
     @State private var estimatedHours = 0
     @State private var estimatedMinutes = 15
+    @State private var recurrenceRule: RecurrenceRule? = nil
+    @State private var showingRecurrenceBuilder = false
     
     private let categories = ["General", "Indoor", "Outdoor", "Kitchen", "Bathroom", "Bedroom", "Weekly", "Monthly"]
     
@@ -63,13 +65,44 @@ struct ChoreCreationView: View {
                     }
                 }
                 
+                Section("Recurrence") {
+                    Button(action: {
+                        showingRecurrenceBuilder = true
+                    }) {
+                        HStack {
+                            Text("Repeat Pattern")
+                            Spacer()
+                            if let rule = recurrenceRule {
+                                Text(RecurrenceEngine.description(for: rule))
+                                    .foregroundColor(.secondary)
+                                    .font(.caption)
+                            } else {
+                                Text("None")
+                                    .foregroundColor(.secondary)
+                            }
+                            Image(systemName: "chevron.right")
+                                .foregroundColor(.secondary)
+                                .font(.caption)
+                        }
+                    }
+                    
+                    if recurrenceRule != nil {
+                        Button(role: .destructive, action: {
+                            recurrenceRule = nil
+                        }) {
+                            Text("Remove Recurrence")
+                        }
+                    }
+                }
+                
                 Section {
                     Button(action: {
                         Task {
                             await viewModel.createChoreTemplate(
                                 name: name,
                                 description: description.isEmpty ? nil : description,
-                                category: category
+                                category: category,
+                                recurrenceRule: recurrenceRule
                             )
                             dismiss()
                         }
@@ -92,6 +125,9 @@ struct ChoreCreationView: View {
                         dismiss()
                     }
                 }
+            }
+            .sheet(isPresented: $showingRecurrenceBuilder) {
+                RecurrenceBuilderView(recurrenceRule: $recurrenceRule)
             }
         }
     }

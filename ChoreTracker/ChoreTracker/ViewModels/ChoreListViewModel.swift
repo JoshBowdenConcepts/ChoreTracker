@@ -72,6 +72,24 @@ class ChoreListViewModel: ObservableObject {
         do {
             choreTemplates = try cloudKitService.fetchChoreTemplates(context: context)
             choreInstances = try cloudKitService.fetchChoreInstances(context: context)
+            
+            // Generate instances for templates that need them
+            for template in choreTemplates {
+                if InstanceGenerator.needsInstanceGeneration(for: template) {
+                    do {
+                        _ = try InstanceGenerator.generateInstances(
+                            for: template,
+                            context: context
+                        )
+                    } catch {
+                        // Log error but don't fail the entire load
+                        print("Failed to generate instances for template: \(error.localizedDescription)")
+                    }
+                }
+            }
+            
+            // Reload instances after generation
+            choreInstances = try cloudKitService.fetchChoreInstances(context: context)
             errorMessage = nil
         } catch {
             errorMessage = cloudKitService.handleCloudKitError(error)
@@ -83,7 +101,8 @@ class ChoreListViewModel: ObservableObject {
     func createChoreTemplate(
         name: String,
         description: String?,
-        category: String
+        category: String,
+        recurrenceRule: RecurrenceRule? = nil
     ) async {
         guard let user = currentUser else {
             errorMessage = "User not available"
@@ -94,13 +113,26 @@ class ChoreListViewModel: ObservableObject {
         defer { isLoading = false }
         
         do {
-            _ = try cloudKitService.createChoreTemplate(
+            let template = try cloudKitService.createChoreTemplate(
                 name: name,
                 description: description,
                 category: category,
                 createdBy: user,
                 context: context
             )
+            
+            // Set recurrence rule if provided
+            if let recurrenceRule = recurrenceRule {
+                template.recurrenceRule = recurrenceRule
+                try context.save()
+                
+                // Generate initial instances for recurring chores
+                _ = try InstanceGenerator.generateInstances(
+                    for: template,
+                    context: context
+                )
+            }
+            
             await loadChores()
         } catch {
             errorMessage = cloudKitService.handleCloudKitError(error)

@@ -47,6 +47,17 @@ struct ChoreDetailView: View {
                     }
                 }
                 
+                if let recurrenceRule = template.recurrenceRule {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Recurrence")
+                            .font(.headline)
+                        Text(RecurrenceEngine.description(for: recurrenceRule))
+                            .font(.body)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding(.vertical, 4)
+                }
+                
                 if let createdAt = template.createdAt {
                     HStack {
                         Text("Created")
