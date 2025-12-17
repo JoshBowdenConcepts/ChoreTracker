@@ -24,6 +24,7 @@
         <attribute name="isActive" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
         <attribute name="name" optional="YES" attributeType="String"/>
         <attribute name="recurrenceRuleJSON" optional="YES" attributeType="String"/>
+        <relationship name="assignedTo" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="User" inverseName="assignedTemplates" inverseEntity="User"/>
         <relationship name="createdBy" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="User" inverseName="createdTemplates" inverseEntity="User"/>
         <relationship name="instances" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="ChoreInstance" inverseName="template" inverseEntity="ChoreInstance"/>
     </entity>
@@ -39,6 +40,7 @@
         <attribute name="parentConsentDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="parentId" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
         <attribute name="userType" optional="YES" attributeType="String"/>
+        <relationship name="assignedTemplates" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="ChoreTemplate" inverseName="assignedTo" inverseEntity="ChoreTemplate"/>
         <relationship name="completedInstances" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="ChoreInstance" inverseName="completedBy" inverseEntity="ChoreInstance"/>
         <relationship name="createdTemplates" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="ChoreTemplate" inverseName="createdBy" inverseEntity="ChoreTemplate"/>
     </entity>

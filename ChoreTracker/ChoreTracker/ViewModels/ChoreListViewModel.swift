@@ -17,6 +17,7 @@ class ChoreListViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage: String?
     @Published var currentUser: User?
+    @Published var householdUsers: [User] = []
     
     private let cloudKitService = CloudKitService.shared
     private var cancellables = Set<AnyCancellable>()
@@ -61,6 +62,9 @@ class ChoreListViewModel: ObservableObject {
             // Fetch or create current user
             currentUser = try await cloudKitService.fetchOrCreateCurrentUser(context: context)
             
+            // Load household users
+            householdUsers = try cloudKitService.fetchHouseholdUsers(context: context)
+            
             // Load chores
             await loadChores()
         } catch {
@@ -72,6 +76,9 @@ class ChoreListViewModel: ObservableObject {
         do {
             choreTemplates = try cloudKitService.fetchChoreTemplates(context: context)
             choreInstances = try cloudKitService.fetchChoreInstances(context: context)
+            
+            // Refresh household users
+            householdUsers = try cloudKitService.fetchHouseholdUsers(context: context)
             
             // Generate instances for templates that need them
             for template in choreTemplates {
@@ -102,7 +109,8 @@ class ChoreListViewModel: ObservableObject {
         name: String,
         description: String?,
         category: String,
-        recurrenceRule: RecurrenceRule? = nil
+        recurrenceRule: RecurrenceRule? = nil,
+        assignedTo: User? = nil
     ) async {
         guard let user = currentUser else {
             errorMessage = "User not available"
@@ -121,12 +129,20 @@ class ChoreListViewModel: ObservableObject {
                 context: context
             )
             
+            // Set assignment if provided
+            if let assignedTo = assignedTo {
+                template.assignedTo = assignedTo
+            }
+            
             // Set recurrence rule if provided
             if let recurrenceRule = recurrenceRule {
                 template.recurrenceRule = recurrenceRule
-                try context.save()
-                
-                // Generate initial instances for recurring chores
+            }
+            
+            try context.save()
+            
+            // Generate initial instances for recurring chores
+            if template.recurrenceRule != nil {
                 _ = try InstanceGenerator.generateInstances(
                     for: template,
                     context: context

@@ -18,6 +18,7 @@ struct ChoreCreationView: View {
     @State private var estimatedMinutes = 15
     @State private var recurrenceRule: RecurrenceRule? = nil
     @State private var showingRecurrenceBuilder = false
+    @State private var selectedUser: User? = nil
     
     private let categories = ["General", "Indoor", "Outdoor", "Kitchen", "Bathroom", "Bedroom", "Weekly", "Monthly"]
     
@@ -65,6 +66,15 @@ struct ChoreCreationView: View {
                     }
                 }
                 
+                Section("Assignment") {
+                    Picker("Assign To", selection: $selectedUser) {
+                        Text("Unassigned").tag(nil as User?)
+                        ForEach(viewModel.householdUsers, id: \.id) { user in
+                            Text(user.name ?? "Unknown").tag(user as User?)
+                        }
+                    }
+                }
+                
                 Section("Recurrence") {
                     Button(action: {
                         showingRecurrenceBuilder = true
@@ -102,7 +112,8 @@ struct ChoreCreationView: View {
                                 name: name,
                                 description: description.isEmpty ? nil : description,
                                 category: category,
-                                recurrenceRule: recurrenceRule
+                                recurrenceRule: recurrenceRule,
+                                assignedTo: selectedUser
                             )
                             dismiss()
                         }

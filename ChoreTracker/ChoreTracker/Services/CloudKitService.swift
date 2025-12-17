@@ -151,6 +151,43 @@ class CloudKitService {
         return user
     }
     
+    // MARK: - CloudKit Sharing
+    
+    /// Fetches all users in the household (from Core Data)
+    func fetchHouseholdUsers(context: NSManagedObjectContext) throws -> [User] {
+        let request: NSFetchRequest<User> = User.fetchRequest()
+        request.sortDescriptors = [NSSortDescriptor(keyPath: \User.name, ascending: true)]
+        return try context.fetch(request)
+    }
+    
+    /// Creates a CloudKit share for sharing chore data with another user
+    /// Note: With NSPersistentCloudKitContainer, use container.share(_:to:) method
+    /// This is a placeholder for future CloudKit sharing implementation
+    func createShare(for template: ChoreTemplate, container: NSPersistentCloudKitContainer) async throws -> CKShare {
+        // CloudKit sharing with Core Data requires using the container's share method
+        // This will be implemented when we add full CloudKit sharing support
+        throw NSError(domain: "CloudKitService", code: -1, userInfo: [NSLocalizedDescriptionKey: "CloudKit sharing not yet implemented"])
+    }
+    
+    /// Accepts a CloudKit share invitation
+    /// Note: Share acceptance is typically handled by the system via UICloudSharingController
+    func acceptShare(metadata: CKShare.Metadata) async throws {
+        let acceptOperation = CKAcceptSharesOperation(shareMetadatas: [metadata])
+        
+        return try await withCheckedThrowingContinuation { continuation in
+            acceptOperation.acceptSharesResultBlock = { result in
+                switch result {
+                case .success:
+                    continuation.resume()
+                case .failure(let error):
+                    continuation.resume(throwing: error)
+                }
+            }
+            
+            container.add(acceptOperation)
+        }
+    }
+    
     // MARK: - Error Handling
     
     /// Handles CloudKit errors and provides user-friendly messages

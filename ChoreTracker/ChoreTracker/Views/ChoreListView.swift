@@ -10,6 +10,7 @@ import SwiftUI
 struct ChoreListView: View {
     @ObservedObject var viewModel: ChoreListViewModel
     @State private var showingCreateView = false
+    @State private var showingUserManagement = false
     @State private var selectedFilter: FilterOption = .all
     
     enum FilterOption: String, CaseIterable {
@@ -63,6 +64,14 @@ struct ChoreListView: View {
             ChoreInstanceDetailView(instance: instance, viewModel: viewModel)
         }
         .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button(action: {
+                    showingUserManagement = true
+                }) {
+                    Image(systemName: "person.2")
+                }
+            }
+            
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
                     ForEach(FilterOption.allCases, id: \.self) { option in
@@ -89,6 +98,9 @@ struct ChoreListView: View {
                     Image(systemName: "plus")
                 }
             }
+        }
+        .sheet(isPresented: $showingUserManagement) {
+            UserManagementView(viewModel: viewModel)
         }
         .sheet(isPresented: $showingCreateView) {
             ChoreCreationView(viewModel: viewModel)
@@ -142,6 +154,16 @@ struct ChoreTemplateRow: View {
                     .padding(.vertical, 4)
                     .background(Color.blue.opacity(0.1))
                     .cornerRadius(4)
+                
+                if let assignedTo = template.assignedTo {
+                    Text(assignedTo.name ?? "Assigned")
+                        .font(.caption)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.green.opacity(0.1))
+                        .cornerRadius(4)
+                }
+                
                 Spacer()
                 if template.estimatedDuration > 0 {
                     Text(template.estimatedDuration.formattedDuration())
