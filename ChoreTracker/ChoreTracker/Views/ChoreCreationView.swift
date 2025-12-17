@@ -126,6 +126,11 @@ struct ChoreCreationView: View {
                         }
                     }
                     .disabled(name.isEmpty || viewModel.isLoading)
+                    .overlay {
+                        if viewModel.isLoading {
+                            ProgressView()
+                        }
+                    }
                 }
             }
             .navigationTitle("New Chore")

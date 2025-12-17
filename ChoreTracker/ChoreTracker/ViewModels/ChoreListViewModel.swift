@@ -73,6 +73,13 @@ class ChoreListViewModel: ObservableObject {
     }
     
     func loadChores() async {
+        // Only show loading indicator for initial load, not for refreshes
+        let shouldShowLoading = choreTemplates.isEmpty && choreInstances.isEmpty
+        if shouldShowLoading {
+            isLoading = true
+        }
+        defer { isLoading = false }
+        
         do {
             choreTemplates = try cloudKitService.fetchChoreTemplates(context: context)
             choreInstances = try cloudKitService.fetchChoreInstances(context: context)
@@ -80,23 +87,32 @@ class ChoreListViewModel: ObservableObject {
             // Refresh household users
             householdUsers = try cloudKitService.fetchHouseholdUsers(context: context)
             
-            // Generate instances for templates that need them
+            // Generate instances for templates that need them (batch operation)
+            var templatesNeedingGeneration: [ChoreTemplate] = []
             for template in choreTemplates {
                 if InstanceGenerator.needsInstanceGeneration(for: template) {
-                    do {
-                        _ = try InstanceGenerator.generateInstances(
-                            for: template,
-                            context: context
-                        )
-                    } catch {
-                        // Log error but don't fail the entire load
-                        print("Failed to generate instances for template: \(error.localizedDescription)")
-                    }
+                    templatesNeedingGeneration.append(template)
+                }
+            }
+            
+            // Generate instances in batch to improve performance
+            for template in templatesNeedingGeneration {
+                do {
+                    _ = try InstanceGenerator.generateInstances(
+                        for: template,
+                        context: context
+                    )
+                } catch {
+                    // Log error but don't fail the entire load
+                    print("Failed to generate instances for template: \(error.localizedDescription)")
                 }
             }
             
             // Reload instances after generation
-            choreInstances = try cloudKitService.fetchChoreInstances(context: context)
+            if !templatesNeedingGeneration.isEmpty {
+                choreInstances = try cloudKitService.fetchChoreInstances(context: context)
+            }
+            
             errorMessage = nil
         } catch {
             errorMessage = cloudKitService.handleCloudKitError(error)

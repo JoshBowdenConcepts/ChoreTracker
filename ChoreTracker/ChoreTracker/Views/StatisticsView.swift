@@ -109,8 +109,9 @@ struct StatisticsView: View {
                 }
                 .padding(.vertical)
             }
-            .navigationTitle("Statistics")
+            .navigationTitle("Progress Statistics")
             .navigationBarTitleDisplayMode(.inline)
+            .accessibilityLabel("Progress Statistics")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Done") {

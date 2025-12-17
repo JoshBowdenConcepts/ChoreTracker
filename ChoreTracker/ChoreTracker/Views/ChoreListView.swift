@@ -27,40 +27,14 @@ struct ChoreListView: View {
     var body: some View {
         List {
             if viewModel.isLoading {
-                ProgressView()
-                    .frame(maxWidth: .infinity, alignment: .center)
+                loadingSection
             } else {
-                // Templates Section
-                if !viewModel.choreTemplates.isEmpty {
-                    Section("Chore Templates") {
-                        ForEach(viewModel.choreTemplates, id: \.id) { template in
-                            NavigationLink(value: template) {
-                                ChoreTemplateRow(template: template)
-                            }
-                        }
-                    }
-                }
-                
-                // Instances Section
-                let filteredInstances = filteredInstances
-                if !filteredInstances.isEmpty {
-                    Section("Chores") {
-                        ForEach(filteredInstances, id: \.id) { instance in
-                            NavigationLink(value: instance) {
-                                ChoreInstanceRow(instance: instance)
-                            }
-                        }
-                    }
-                } else if !viewModel.isLoading {
-                    ContentUnavailableView(
-                        "No chores",
-                        systemImage: "checklist",
-                        description: Text("Create a chore template to get started")
-                    )
-                }
+                templatesSection
+                instancesSection
             }
         }
         .navigationTitle("Chore Progress")
+        .accessibilityLabel("Chore Progress List")
         .navigationDestination(for: ChoreTemplate.self) { template in
             ChoreDetailView(template: template, viewModel: viewModel)
         }
@@ -152,6 +126,65 @@ struct ChoreListView: View {
         } message: {
             if let error = viewModel.errorMessage {
                 Text(error)
+            }
+        }
+    }
+    
+    // MARK: - View Components
+    
+    private var loadingSection: some View {
+        Section {
+            HStack {
+                Spacer()
+                ProgressView()
+                    .padding()
+                Spacer()
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private var templatesSection: some View {
+        if !viewModel.choreTemplates.isEmpty {
+            Section("Chore Templates") {
+                ForEach(viewModel.choreTemplates, id: \.id) { template in
+                    NavigationLink(value: template) {
+                        ChoreTemplateRow(template: template)
+                    }
+                }
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private var instancesSection: some View {
+        if !filteredInstances.isEmpty {
+            Section("Chores") {
+                ForEach(filteredInstances, id: \.id) { instance in
+                    NavigationLink(value: instance) {
+                        ChoreInstanceRow(instance: instance)
+                    }
+                }
+            }
+        } else {
+            Section {
+                VStack(spacing: 16) {
+                    Image(systemName: "checklist")
+                        .font(.system(size: 48))
+                        .foregroundColor(.secondary)
+                    Text("No Chores Yet")
+                        .font(.headline)
+                    Text("Create your first chore template to get started with tracking your progress")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                    Button("Create Chore") {
+                        showingCreateView = true
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
+                .frame(maxWidth: .infinity)
+                .padding()
             }
         }
     }
@@ -257,4 +290,6 @@ struct ChoreInstanceRow: View {
 // MARK: - Navigation Support
 // Note: ChoreTemplate and ChoreInstance already conform to Hashable through NSManagedObject
 // No need to add explicit conformance
+
+
 

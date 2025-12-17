@@ -192,17 +192,7 @@ class CloudKitService {
     
     /// Handles CloudKit errors and provides user-friendly messages
     func handleCloudKitError(_ error: Error) -> String {
-        if let ckError = error as? CKError {
-            return ckError.userFriendlyMessage
-        } else if let nsError = error as NSError?,
-                  nsError.isCloudKitError,
-                  let ckError = nsError.asCloudKitError {
-            return ckError.userFriendlyMessage
-        }
-        
-        // For Core Data errors, return generic message
-        // Never log user data per security requirements
-        return "An error occurred. Please try again."
+        return ErrorHandler.userFriendlyMessage(for: error)
     }
 }
 

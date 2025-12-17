@@ -22,7 +22,14 @@ struct UserManagementView: View {
         NavigationStack {
             List {
                 Section("Household Members") {
-                    ForEach(viewModel.householdUsers, id: \.id) { user in
+                    if viewModel.householdUsers.isEmpty {
+                        ContentUnavailableView(
+                            "No Members Yet",
+                            systemImage: "person.2",
+                            description: Text("Add household members to assign chores and track progress together")
+                        )
+                    } else {
+                        ForEach(viewModel.householdUsers, id: \.id) { user in
                         HStack {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(user.name ?? "Unknown")
@@ -46,6 +53,7 @@ struct UserManagementView: View {
                                     .cornerRadius(4)
                             }
                         }
+                    }
                     }
                 }
                 

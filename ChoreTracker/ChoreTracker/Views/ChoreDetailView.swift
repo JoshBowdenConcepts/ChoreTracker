@@ -162,6 +162,8 @@ struct ChoreInstanceDetailView: View {
                         }
                     }
                     .buttonStyle(.borderedProminent)
+                    .accessibilityLabel("Mark chore as complete")
+                    .accessibilityHint("Opens completion screen where you can record time spent")
                     
                     Button(action: {
                         Task {

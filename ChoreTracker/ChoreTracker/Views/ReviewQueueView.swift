@@ -32,9 +32,11 @@ struct ReviewQueueView: View {
                 
                 Section {
                     if viewModel.filteredReviews.isEmpty {
-                        Text("No chores pending review")
-                            .foregroundColor(.secondary)
-                            .italic()
+                        ContentUnavailableView(
+                            "No Reviews Pending",
+                            systemImage: "checkmark.circle",
+                            description: Text("All supervised account completions have been reviewed")
+                        )
                     } else {
                         ForEach(viewModel.filteredReviews, id: \.id) { instance in
                             NavigationLink(destination: ReviewDetailView(instance: instance, viewModel: viewModel)) {

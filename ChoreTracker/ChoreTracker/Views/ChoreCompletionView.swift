@@ -30,8 +30,8 @@ struct ChoreCompletionView: View {
                     }
                 }
                 
-                Section("Time Tracking") {
-                    Toggle("Track Time", isOn: $trackingTime)
+                Section("Time Progress") {
+                    Toggle("Record Time", isOn: $trackingTime)
                     
                     if trackingTime {
                         HStack {
