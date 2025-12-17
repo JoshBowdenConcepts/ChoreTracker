@@ -17,6 +17,10 @@ struct ChoreTrackerApp: App {
         WindowGroup {
             ContentView()
                 .environment(\.managedObjectContext, persistenceController.container.viewContext)
+                .task {
+                    // Request notification permission on app launch
+                    _ = await NotificationService.shared.requestPermission()
+                }
         }
     }
 }

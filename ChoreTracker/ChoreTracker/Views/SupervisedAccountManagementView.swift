@@ -119,7 +119,7 @@ struct SupervisedAccountManagementView: View {
             return
         }
         
-        let user = User.create(
+        _ = User.create(
             context: viewContext,
             name: newUserName,
             userType: "supervised",

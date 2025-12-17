@@ -70,8 +70,9 @@ class InstanceGenerator {
                 dueDate: occurrenceDate
             )
             
-            // Note: Assignment and review requirements will be handled in Phase 3
-            // For now, instances are created without assignment
+            // Schedule notification for the new instance
+            let notificationService = NotificationService.shared
+            notificationService.scheduleNotification(for: instance, reminderMinutesBefore: 60)
             
             createdInstances.append(instance)
         }

@@ -43,5 +43,16 @@
         <relationship name="assignedTemplates" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="ChoreTemplate" inverseName="assignedTo" inverseEntity="ChoreTemplate"/>
         <relationship name="completedInstances" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="ChoreInstance" inverseName="completedBy" inverseEntity="ChoreInstance"/>
         <relationship name="createdTemplates" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="ChoreTemplate" inverseName="createdBy" inverseEntity="ChoreTemplate"/>
+        <relationship name="goalCompletions" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="DailyGoalCompletion" inverseName="user" inverseEntity="DailyGoalCompletion"/>
+    </entity>
+    <entity name="DailyGoalCompletion" representedClassName="DailyGoalCompletion" syncable="YES" codeGenerationType="class">
+        <attribute name="allChoresCompleted" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="completedChoresCount" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="date" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="totalChoresCount" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="totalTimeSpent" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <relationship name="user" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="User" inverseName="goalCompletions" inverseEntity="User"/>
     </entity>
 </model>

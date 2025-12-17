@@ -90,7 +90,7 @@ struct UserManagementView: View {
     private func addUser() async {
         guard !newUserName.isEmpty else { return }
         
-        let user = User.create(
+        _ = User.create(
             context: viewContext,
             name: newUserName,
             userType: newUserType,

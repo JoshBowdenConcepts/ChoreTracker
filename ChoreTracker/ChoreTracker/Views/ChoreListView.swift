@@ -13,6 +13,7 @@ struct ChoreListView: View {
     @State private var showingUserManagement = false
     @State private var showingSupervisedAccounts = false
     @State private var showingReviewQueue = false
+    @State private var showingStatistics = false
     @State private var selectedFilter: FilterOption = .all
     
     enum FilterOption: String, CaseIterable {
@@ -86,6 +87,14 @@ struct ChoreListView: View {
                     }) {
                         Label("Review Queue", systemImage: "checkmark.circle.badge.questionmark")
                     }
+                    
+                    Divider()
+                    
+                    Button(action: {
+                        showingStatistics = true
+                    }) {
+                        Label("Statistics", systemImage: "chart.bar.fill")
+                    }
                 } label: {
                     Image(systemName: "person.2")
                 }
@@ -126,6 +135,9 @@ struct ChoreListView: View {
         }
         .sheet(isPresented: $showingReviewQueue) {
             ReviewQueueView()
+        }
+        .sheet(isPresented: $showingStatistics) {
+            StatisticsView()
         }
         .sheet(isPresented: $showingCreateView) {
             ChoreCreationView(viewModel: viewModel)

@@ -105,6 +105,18 @@ class ReviewQueueViewModel: ObservableObject {
                 reviewedBy: currentUser,
                 context: context
             )
+            
+            // Update daily goal and statistics if completed
+            if instance.status == "completed", let completedBy = instance.completedBy {
+                let statisticsService = StatisticsService.shared
+                let completionDate = instance.completedAt ?? Date()
+                try statisticsService.checkAndUpdateDailyGoal(
+                    for: completedBy,
+                    date: completionDate,
+                    context: context
+                )
+            }
+            
             await loadPendingReviews()
         } catch {
             errorMessage = cloudKitService.handleCloudKitError(error)

@@ -106,6 +106,7 @@ struct ChoreInstanceDetailView: View {
     let instance: ChoreInstance
     @ObservedObject var viewModel: ChoreListViewModel
     @Environment(\.dismiss) private var dismiss
+    @State private var showingCompletionView = false
     
     var body: some View {
         List {
@@ -151,10 +152,7 @@ struct ChoreInstanceDetailView: View {
             if instance.status == "pending" {
                 Section {
                     Button(action: {
-                        Task {
-                            await viewModel.markInstanceComplete(instance)
-                            dismiss()
-                        }
+                        showingCompletionView = true
                     }) {
                         HStack {
                             Spacer()
@@ -180,6 +178,9 @@ struct ChoreInstanceDetailView: View {
                     .buttonStyle(.bordered)
                 }
             }
+        }
+        .sheet(isPresented: $showingCompletionView) {
+            ChoreCompletionView(instance: instance, viewModel: viewModel)
         }
         .navigationTitle("Chore Instance")
         .navigationBarTitleDisplayMode(.inline)

@@ -169,7 +169,7 @@ class ChoreListViewModel: ObservableObject {
     
     // MARK: - Chore Instance Operations
     
-    func markInstanceComplete(_ instance: ChoreInstance) async {
+    func markInstanceComplete(_ instance: ChoreInstance, duration: TimeInterval? = nil) async {
         guard let user = currentUser else {
             errorMessage = "User not available"
             return
@@ -179,8 +179,26 @@ class ChoreListViewModel: ObservableObject {
         defer { isLoading = false }
         
         do {
-            instance.markComplete(by: user)
+            instance.markComplete(by: user, duration: duration)
             try cloudKitService.updateChoreInstance(instance, context: context)
+            
+            // Update daily goal and statistics if completed (not pending review)
+            if instance.status == "completed" {
+                let statisticsService = StatisticsService.shared
+                let completionDate = instance.completedAt ?? Date()
+                try statisticsService.checkAndUpdateDailyGoal(
+                    for: user,
+                    date: completionDate,
+                    context: context
+                )
+            }
+            
+            // Schedule/cancel notifications
+            let notificationService = NotificationService.shared
+            if instance.status == "completed" || instance.status == "skipped" {
+                notificationService.cancelNotification(for: instance)
+            }
+            
             await loadChores()
         } catch {
             errorMessage = cloudKitService.handleCloudKitError(error)
