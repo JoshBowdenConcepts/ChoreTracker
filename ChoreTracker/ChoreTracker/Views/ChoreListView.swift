@@ -11,6 +11,8 @@ struct ChoreListView: View {
     @ObservedObject var viewModel: ChoreListViewModel
     @State private var showingCreateView = false
     @State private var showingUserManagement = false
+    @State private var showingSupervisedAccounts = false
+    @State private var showingReviewQueue = false
     @State private var selectedFilter: FilterOption = .all
     
     enum FilterOption: String, CaseIterable {
@@ -18,6 +20,7 @@ struct ChoreListView: View {
         case pending = "Pending"
         case completed = "Completed"
         case overdue = "Overdue"
+        case pendingReview = "Pending Review"
     }
     
     var body: some View {
@@ -65,9 +68,25 @@ struct ChoreListView: View {
         }
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
-                Button(action: {
-                    showingUserManagement = true
-                }) {
+                Menu {
+                    Button(action: {
+                        showingUserManagement = true
+                    }) {
+                        Label("Household Members", systemImage: "person.2")
+                    }
+                    
+                    Button(action: {
+                        showingSupervisedAccounts = true
+                    }) {
+                        Label("Supervised Accounts", systemImage: "person.fill.checkmark")
+                    }
+                    
+                    Button(action: {
+                        showingReviewQueue = true
+                    }) {
+                        Label("Review Queue", systemImage: "checkmark.circle.badge.questionmark")
+                    }
+                } label: {
                     Image(systemName: "person.2")
                 }
             }
@@ -102,6 +121,12 @@ struct ChoreListView: View {
         .sheet(isPresented: $showingUserManagement) {
             UserManagementView(viewModel: viewModel)
         }
+        .sheet(isPresented: $showingSupervisedAccounts) {
+            SupervisedAccountManagementView(viewModel: viewModel)
+        }
+        .sheet(isPresented: $showingReviewQueue) {
+            ReviewQueueView()
+        }
         .sheet(isPresented: $showingCreateView) {
             ChoreCreationView(viewModel: viewModel)
         }
@@ -129,6 +154,8 @@ struct ChoreListView: View {
             return viewModel.completedInstances
         case .overdue:
             return viewModel.overdueInstances
+        case .pendingReview:
+            return viewModel.choreInstances.filter { $0.status == "pending_review" }
         }
     }
 }

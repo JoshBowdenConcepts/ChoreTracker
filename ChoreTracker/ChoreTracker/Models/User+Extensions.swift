@@ -13,16 +13,31 @@ extension User {
     // MARK: - Convenience Methods
     
     /// Creates a new User instance
-    public static func create(context: NSManagedObjectContext, name: String, userType: String = "parent", email: String? = nil) -> User {
+    public static func create(
+        context: NSManagedObjectContext,
+        name: String,
+        userType: String = "parent",
+        email: String? = nil,
+        parentId: UUID? = nil,
+        isMinor: Bool = false,
+        hasDevice: Bool = true
+    ) -> User {
         let user = User(context: context)
         user.id = UUID()
         user.name = name
         user.userType = userType
         user.email = email
-        user.hasDevice = true
-        user.isMinor = false
+        user.hasDevice = hasDevice
+        user.isMinor = isMinor
+        user.parentId = parentId
         user.currentGoalStreak = 0
         user.longestGoalStreak = 0
+        
+        // Set parent consent date if minor
+        if isMinor {
+            user.parentConsentDate = Date()
+        }
+        
         return user
     }
     

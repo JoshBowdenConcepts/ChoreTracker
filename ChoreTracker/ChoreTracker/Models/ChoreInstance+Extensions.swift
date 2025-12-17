@@ -25,10 +25,22 @@ extension ChoreInstance {
     }
     
     /// Marks the instance as complete
+    /// For supervised users, automatically sets requiresReview to true
     func markComplete(by user: User, duration: TimeInterval? = nil) {
         completedAt = Date()
         completedBy = user
-        status = requiresReview ? "pending_review" : "completed"
+        
+        // Check if user is supervised - if so, require review
+        let isSupervised = user.userType == "supervised" || user.parentId != nil
+        
+        if isSupervised {
+            requiresReview = true
+            status = "pending_review"
+        } else {
+            requiresReview = false
+            status = "completed"
+        }
+        
         actualDuration = duration ?? 0.0
     }
     
