@@ -12,6 +12,7 @@ struct ChoreDetailView: View {
     @ObservedObject var viewModel: ChoreListViewModel
     @Environment(\.dismiss) private var dismiss
     @State private var showingEditView = false
+    @State private var showingValidationView = false
     
     var body: some View {
         List {
@@ -36,6 +37,20 @@ struct ChoreDetailView: View {
                     Spacer()
                     Text(template.category ?? "General")
                         .foregroundColor(.secondary)
+                }
+                
+                // Sync status
+                HStack {
+                    Text("iCloud Sync")
+                    Spacer()
+                    let syncStatus = SyncStatusHelper.syncStatusIcon(for: template)
+                    HStack(spacing: 4) {
+                        Image(systemName: syncStatus.icon)
+                            .font(.caption)
+                        Text(SyncStatusHelper.isSynced(template) ? "Synced" : "Syncing...")
+                            .font(.caption)
+                    }
+                    .foregroundColor(syncStatus.color)
                 }
                 
                 if template.estimatedDuration > 0 {
@@ -90,14 +105,30 @@ struct ChoreDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button("Edit") {
-                    showingEditView = true
+                Menu {
+                    if template.recurrenceRule != nil {
+                        Button(action: {
+                            showingValidationView = true
+                        }) {
+                            Label("Validate Schedule", systemImage: "checkmark.seal")
+                        }
+                    }
+                    
+                    Button(action: {
+                        showingEditView = true
+                    }) {
+                        Label("Edit", systemImage: "pencil")
+                    }
+                } label: {
+                    Image(systemName: "ellipsis.circle")
                 }
             }
         }
+        .sheet(isPresented: $showingValidationView) {
+            InstanceValidationView(template: template)
+        }
         .sheet(isPresented: $showingEditView) {
-            // Edit view would go here in a future update
-            Text("Edit functionality coming soon")
+            ChoreEditView(template: template, viewModel: viewModel)
         }
     }
 }
@@ -137,6 +168,20 @@ struct ChoreInstanceDetailView: View {
                     Spacer()
                     Text((instance.status ?? "unknown").capitalized)
                         .foregroundColor(statusColor)
+                }
+                
+                // Sync status
+                HStack {
+                    Text("iCloud Sync")
+                    Spacer()
+                    let syncStatus = SyncStatusHelper.syncStatusIcon(for: instance)
+                    HStack(spacing: 4) {
+                        Image(systemName: syncStatus.icon)
+                            .font(.caption)
+                        Text(SyncStatusHelper.isSynced(instance) ? "Synced" : "Syncing...")
+                            .font(.caption)
+                    }
+                    .foregroundColor(syncStatus.color)
                 }
                 
                 if instance.status == "completed", let completedAt = instance.completedAt {

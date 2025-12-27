@@ -9,6 +9,7 @@ import Foundation
 import SwiftUI
 import CoreData
 import Combine
+import CloudKit
 
 @MainActor
 class ChoreListViewModel: ObservableObject {
@@ -59,6 +60,30 @@ class ChoreListViewModel: ObservableObject {
         defer { isLoading = false }
         
         do {
+            // Check iCloud status first
+            let accountStatus = try await cloudKitService.checkAccountStatus()
+            if accountStatus != .available {
+                errorMessage = "Please sign in to iCloud in Settings to sync your data across devices."
+                return
+            }
+            
+            // Give CloudKit time to sync on first launch (especially after reinstall)
+            // CloudKit needs time to download data from iCloud
+            // Wait longer for initial sync to complete
+            try? await Task.sleep(nanoseconds: 3_000_000_000) // 3 seconds
+            
+            // Force a refresh of the context to pull in any CloudKit data
+            context.refreshAllObjects()
+            
+            // Try to fetch data to trigger CloudKit sync
+            // This helps ensure data is downloaded from iCloud
+            let _ = try? context.fetch(ChoreTemplate.fetchRequest())
+            let _ = try? context.fetch(ChoreInstance.fetchRequest())
+            let _ = try? context.fetch(User.fetchRequest())
+            
+            // Give it another moment for the fetch to trigger sync
+            try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 more second
+            
             // Fetch or create current user
             currentUser = try await cloudKitService.fetchOrCreateCurrentUser(context: context)
             
@@ -155,20 +180,40 @@ class ChoreListViewModel: ObservableObject {
                 template.recurrenceRule = recurrenceRule
             }
             
+            // CRITICAL: Save the template to trigger CloudKit sync
             try context.save()
+            context.processPendingChanges()
+            
+            print("💾 Template saved, generating instances if needed...")
             
             // Generate initial instances for recurring chores
             if template.recurrenceRule != nil {
-                _ = try InstanceGenerator.generateInstances(
+                let instances = try InstanceGenerator.generateInstances(
                     for: template,
                     context: context
                 )
+                // Save instances to CloudKit
+                try context.save()
+                context.processPendingChanges()
+                print("💾 Generated \(instances.count) instances and saved to CloudKit")
             }
             
-            await loadChores()
+            // Reload data to reflect the new template and instances
+            // Note: We don't call loadChores() because it would check needsInstanceGeneration
+            // and potentially generate more instances. Since we just generated them, we skip that check.
+            choreTemplates = try cloudKitService.fetchChoreTemplates(context: context)
+            choreInstances = try cloudKitService.fetchChoreInstances(context: context)
+            
+            // Refresh household users
+            householdUsers = try cloudKitService.fetchHouseholdUsers(context: context)
         } catch {
             errorMessage = cloudKitService.handleCloudKitError(error)
         }
+    }
+    
+    func updateChoreTemplate(_ template: ChoreTemplate) async throws {
+        try cloudKitService.updateChoreTemplate(template, context: context)
+        await loadChores()
     }
     
     func deleteChoreTemplate(_ template: ChoreTemplate) async {

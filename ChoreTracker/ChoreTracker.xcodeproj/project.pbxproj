@@ -285,7 +285,7 @@
 		3748306F2EF0FB4E009FF697 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = JBCAppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = ChoreTracker/ChoreTracker.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
@@ -330,7 +330,7 @@
 		374830702EF0FB4E009FF697 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = JBCAppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = ChoreTracker/ChoreTracker.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";

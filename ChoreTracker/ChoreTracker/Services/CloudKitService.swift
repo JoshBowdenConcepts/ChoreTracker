@@ -49,7 +49,21 @@ class CloudKitService {
             createdBy: createdBy
         )
         
+        // Save to Core Data (which will sync to CloudKit automatically)
+        // CRITICAL: Save on the view context to ensure CloudKit sync
         try context.save()
+        
+        // Process pending changes to trigger CloudKit export
+        context.processPendingChanges()
+        
+        // Log for debugging
+        let templateID = template.id?.uuidString ?? "no ID"
+        let templateName = template.name ?? "unnamed"
+        print("💾 ChoreTemplate saved: '\(templateName)' (ID: \(templateID))")
+        print("   - Context has changes: \(context.hasChanges)")
+        print("   - Object is inserted: \(template.isInserted)")
+        print("   - Object is updated: \(template.isUpdated)")
+        
         return template
     }
     
@@ -185,6 +199,136 @@ class CloudKitService {
             }
             
             container.add(acceptOperation)
+        }
+    }
+    
+    // MARK: - Diagnostic Methods
+    
+    /// Queries CloudKit directly to check if records exist
+    /// This helps diagnose sync issues by checking what's actually in CloudKit
+    func queryCloudKitRecords(recordType: String) async throws -> [CKRecord] {
+        let query = CKQuery(recordType: recordType, predicate: NSPredicate(value: true))
+        query.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
+        
+        var allRecords: [CKRecord] = []
+        var cursor: CKQueryOperation.Cursor?
+        
+        repeat {
+            let operation: CKQueryOperation
+            if let existingCursor = cursor {
+                operation = CKQueryOperation(cursor: existingCursor)
+            } else {
+                operation = CKQueryOperation(query: query)
+            }
+            
+            let (matchResults, queryCursor) = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<([CKRecord.ID: Result<CKRecord, Error>], CKQueryOperation.Cursor?), Error>) in
+                var records: [CKRecord.ID: Result<CKRecord, Error>] = [:]
+                
+                operation.recordMatchedBlock = { (recordID, result) in
+                    records[recordID] = result
+                }
+                
+                operation.queryResultBlock = { result in
+                    switch result {
+                    case .success(let cursor):
+                        continuation.resume(returning: (records, cursor))
+                    case .failure(let error):
+                        continuation.resume(throwing: error)
+                    }
+                }
+                
+                privateDatabase.add(operation)
+            }
+            
+            cursor = queryCursor
+            
+            for (_, result) in matchResults {
+                switch result {
+                case .success(let record):
+                    allRecords.append(record)
+                case .failure(let error):
+                    print("⚠️ Failed to fetch record: \(error.localizedDescription)")
+                }
+            }
+        } while cursor != nil
+        
+        return allRecords
+    }
+    
+    /// Gets a summary of all CloudKit record types and counts
+    func getCloudKitDataSummary() async -> [String: Int] {
+        var summary: [String: Int] = [:]
+        
+        let recordTypes = ["ChoreTemplate", "ChoreInstance", "User", "DailyGoalCompletion"]
+        
+        for recordType in recordTypes {
+            do {
+                let records = try await queryCloudKitRecords(recordType: recordType)
+                summary[recordType] = records.count
+                print("📊 CloudKit \(recordType): \(records.count) records")
+            } catch {
+                print("❌ Error querying \(recordType): \(error.localizedDescription)")
+                if let ckError = error as? CKError {
+                    print("   - CloudKit error code: \(ckError.code.rawValue)")
+                    print("   - CloudKit error: \(ckError.userFriendlyMessage)")
+                }
+                summary[recordType] = -1 // -1 indicates error
+            }
+        }
+        
+        return summary
+    }
+    
+    /// Verifies the CloudKit container identifier matches what's expected
+    func verifyContainerIdentifier() -> String {
+        let containerID = container.containerIdentifier
+        let expectedID = "iCloud.\(Bundle.main.bundleIdentifier ?? "unknown")"
+        print("🔍 Container Verification:")
+        print("   - Actual: \(containerID ?? "nil")")
+        print("   - Expected: \(expectedID)")
+        return containerID ?? "unknown"
+    }
+    
+    /// Checks if CloudKit account is available and container is accessible
+    func verifyCloudKitAccess() async -> (isAvailable: Bool, error: String?) {
+        do {
+            let status = try await checkAccountStatus()
+            if status != .available {
+                return (false, "iCloud account status: \(status)")
+            }
+            
+            // Try a simple query to verify database access
+            // Using a predicate that matches nothing is safe and tests access
+            let query = CKQuery(recordType: "ChoreTemplate", predicate: NSPredicate(value: false))
+            let operation = CKQueryOperation(query: query)
+            operation.resultsLimit = 1
+            
+            return try await withCheckedThrowingContinuation { continuation in
+                operation.queryResultBlock = { result in
+                    switch result {
+                    case .success:
+                        // Query succeeded, database is accessible
+                        continuation.resume(returning: (true, nil))
+                    case .failure(let error):
+                        if let ckError = error as? CKError {
+                            // Check for critical errors that indicate access problems
+                            switch ckError.code {
+                            case .notAuthenticated, .permissionFailure, .serviceUnavailable:
+                                continuation.resume(returning: (false, "CloudKit error: \(ckError.userFriendlyMessage)"))
+                            default:
+                                // Other errors might be okay (like network issues)
+                                continuation.resume(returning: (true, nil))
+                            }
+                        } else {
+                            continuation.resume(returning: (false, "Error: \(error.localizedDescription)"))
+                        }
+                    }
+                }
+                
+                privateDatabase.add(operation)
+            }
+        } catch {
+            return (false, "Error: \(error.localizedDescription)")
         }
     }
     

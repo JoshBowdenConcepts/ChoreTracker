@@ -10,10 +10,28 @@ import CoreData
 
 struct ContentView: View {
     @StateObject private var viewModel = ChoreListViewModel()
+    @State private var showSplash = true
     
     var body: some View {
-        NavigationStack {
-            ChoreListView(viewModel: viewModel)
+        Group {
+            if showSplash {
+                SplashView()
+                    .transition(.opacity)
+            } else {
+                NavigationStack {
+                    ChoreListView(viewModel: viewModel)
+                }
+                .transition(.opacity)
+            }
+        }
+        .task {
+            // Wait for initial data to load
+            await viewModel.loadInitialData()
+            
+            // Hide splash screen with animation
+            withAnimation(.easeOut(duration: 0.3)) {
+                showSplash = false
+            }
         }
     }
 }

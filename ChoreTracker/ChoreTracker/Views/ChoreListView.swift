@@ -14,7 +14,9 @@ struct ChoreListView: View {
     @State private var showingSupervisedAccounts = false
     @State private var showingReviewQueue = false
     @State private var showingStatistics = false
+    @State private var showingSettings = false
     @State private var selectedFilter: FilterOption = .all
+    @State private var searchText = ""
     
     enum FilterOption: String, CaseIterable {
         case all = "All"
@@ -33,6 +35,7 @@ struct ChoreListView: View {
                 instancesSection
             }
         }
+        .searchable(text: $searchText, prompt: "Search chores...")
         .navigationTitle("Chore Progress")
         .accessibilityLabel("Chore Progress List")
         .navigationDestination(for: ChoreTemplate.self) { template in
@@ -68,6 +71,14 @@ struct ChoreListView: View {
                         showingStatistics = true
                     }) {
                         Label("Statistics", systemImage: "chart.bar.fill")
+                    }
+                    
+                    Divider()
+                    
+                    Button(action: {
+                        showingSettings = true
+                    }) {
+                        Label("Settings", systemImage: "gearshape.fill")
                     }
                 } label: {
                     Image(systemName: "person.2")
@@ -113,6 +124,9 @@ struct ChoreListView: View {
         .sheet(isPresented: $showingStatistics) {
             StatisticsView()
         }
+        .sheet(isPresented: $showingSettings) {
+            SettingsView()
+        }
         .sheet(isPresented: $showingCreateView) {
             ChoreCreationView(viewModel: viewModel)
         }
@@ -145,14 +159,28 @@ struct ChoreListView: View {
     
     @ViewBuilder
     private var templatesSection: some View {
-        if !viewModel.choreTemplates.isEmpty {
+        let filteredTemplates = filteredTemplates
+        if !filteredTemplates.isEmpty {
             Section("Chore Templates") {
-                ForEach(viewModel.choreTemplates, id: \.id) { template in
+                ForEach(filteredTemplates, id: \.id) { template in
                     NavigationLink(value: template) {
                         ChoreTemplateRow(template: template)
                     }
                 }
             }
+        }
+    }
+    
+    private var filteredTemplates: [ChoreTemplate] {
+        if searchText.isEmpty {
+            return viewModel.choreTemplates
+        }
+        return viewModel.choreTemplates.filter { template in
+            let name = template.name?.lowercased() ?? ""
+            let description = template.choreDescription?.lowercased() ?? ""
+            let category = template.category?.lowercased() ?? ""
+            let search = searchText.lowercased()
+            return name.contains(search) || description.contains(search) || category.contains(search)
         }
     }
     
@@ -190,17 +218,31 @@ struct ChoreListView: View {
     }
     
     private var filteredInstances: [ChoreInstance] {
+        let baseInstances: [ChoreInstance]
         switch selectedFilter {
         case .all:
-            return viewModel.choreInstances
+            baseInstances = viewModel.choreInstances
         case .pending:
-            return viewModel.pendingInstances
+            baseInstances = viewModel.pendingInstances
         case .completed:
-            return viewModel.completedInstances
+            baseInstances = viewModel.completedInstances
         case .overdue:
-            return viewModel.overdueInstances
+            baseInstances = viewModel.overdueInstances
         case .pendingReview:
-            return viewModel.choreInstances.filter { $0.status == "pending_review" }
+            baseInstances = viewModel.choreInstances.filter { $0.status == "pending_review" }
+        }
+        
+        // Apply search filter if active
+        if searchText.isEmpty {
+            return baseInstances
+        }
+        
+        let search = searchText.lowercased()
+        return baseInstances.filter { instance in
+            let templateName = instance.template?.name?.lowercased() ?? ""
+            let templateDescription = instance.template?.choreDescription?.lowercased() ?? ""
+            let templateCategory = instance.template?.category?.lowercased() ?? ""
+            return templateName.contains(search) || templateDescription.contains(search) || templateCategory.contains(search)
         }
     }
 }
@@ -212,8 +254,20 @@ struct ChoreTemplateRow: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(template.name ?? "Unnamed Chore")
-                .font(.headline)
+            HStack {
+                Text(template.name ?? "Unnamed Chore")
+                    .font(.headline)
+                
+                Spacer()
+                
+                // Sync status indicator
+                let syncStatus = SyncStatusHelper.syncStatusIcon(for: template)
+                Image(systemName: syncStatus.icon)
+                    .font(.caption)
+                    .foregroundColor(syncStatus.color)
+                    .accessibilityLabel(SyncStatusHelper.isSynced(template) ? "Synced to iCloud" : "Syncing to iCloud")
+            }
+            
             if let description = template.choreDescription, !description.isEmpty {
                 Text(description)
                     .font(.caption)
@@ -254,13 +308,23 @@ struct ChoreInstanceRow: View {
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
-                if let template = instance.template {
-                    Text(template.name ?? "Unnamed Chore")
-                        .font(.headline)
-                } else {
-                    Text("Unknown Chore")
-                        .font(.headline)
+                HStack {
+                    if let template = instance.template {
+                        Text(template.name ?? "Unnamed Chore")
+                            .font(.headline)
+                    } else {
+                        Text("Unknown Chore")
+                            .font(.headline)
+                    }
+                    
+                    // Sync status indicator
+                    let syncStatus = SyncStatusHelper.syncStatusIcon(for: instance)
+                    Image(systemName: syncStatus.icon)
+                        .font(.caption2)
+                        .foregroundColor(syncStatus.color)
+                        .accessibilityLabel(SyncStatusHelper.isSynced(instance) ? "Synced to iCloud" : "Syncing to iCloud")
                 }
+                
                 if let dueDate = instance.dueDate {
                     Text(dueDate.formattedDateOnly())
                         .font(.caption)

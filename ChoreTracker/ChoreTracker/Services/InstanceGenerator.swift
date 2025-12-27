@@ -29,8 +29,26 @@ class InstanceGenerator {
         }
         
         // Get existing instances to avoid duplicates
-        let existingInstances = template.instances?.allObjects as? [ChoreInstance] ?? []
-        let existingDueDates = Set(existingInstances.compactMap { $0.dueDate })
+        // First, check for instances that are already in the context (including unsaved ones)
+        let fetchRequest: NSFetchRequest<ChoreInstance> = ChoreInstance.fetchRequest()
+        fetchRequest.predicate = NSPredicate(format: "template == %@", template)
+        
+        // Fetch from the store
+        let savedInstances = (try? context.fetch(fetchRequest)) ?? []
+        
+        // Also check for instances in the context that haven't been saved yet
+        let insertedObjects = context.insertedObjects.compactMap { $0 as? ChoreInstance }
+        let unsavedInstances = insertedObjects.filter { $0.template == template }
+        
+        // Combine both saved and unsaved instances
+        let allExistingInstances = savedInstances + unsavedInstances
+        
+        // Build a set of normalized dates (day-level) for comparison
+        let calendar = Calendar.current
+        let existingDueDateDays: Set<Date> = Set(allExistingInstances.compactMap { instance in
+            guard let dueDate = instance.dueDate else { return nil }
+            return calendar.startOfDay(for: dueDate)
+        })
         
         // Determine start date (use template creation date or today, whichever is later)
         let startDate = template.createdAt ?? Date()
@@ -38,7 +56,6 @@ class InstanceGenerator {
         let afterDate = max(startDate, today)
         
         // Calculate end date for generation
-        let calendar = Calendar.current
         guard let endDate = calendar.date(byAdding: .day, value: lookAheadDays, to: afterDate) else {
             return []
         }
@@ -58,8 +75,22 @@ class InstanceGenerator {
         var createdInstances: [ChoreInstance] = []
         
         for occurrenceDate in occurrences {
-            // Skip if instance already exists for this date
-            if existingDueDates.contains(occurrenceDate) {
+            // Normalize the occurrence date to day-level for comparison
+            let occurrenceDay = calendar.startOfDay(for: occurrenceDate)
+            
+            // Check if an instance already exists for this day
+            if existingDueDateDays.contains(occurrenceDay) {
+                continue
+            }
+            
+            // Also check if we're about to create a duplicate in this batch
+            let alreadyInBatch = createdInstances.contains { instance in
+                guard let dueDate = instance.dueDate else { return false }
+                let instanceDay = calendar.startOfDay(for: dueDate)
+                return calendar.isDate(occurrenceDay, inSameDayAs: instanceDay)
+            }
+            
+            if alreadyInBatch {
                 continue
             }
             
